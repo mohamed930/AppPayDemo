@@ -79,23 +79,10 @@ struct MainScreenView: View {
             .frame(maxWidth: .infinity,alignment: .center)
             .padding(.bottom,16)
             
-            Button(action: {
+            ApplePayButton {
                 viewModel.validateApplePayButtonAction()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "apple.logo")
-                        .font(.system(size: 23, weight: .medium))
-
-                    Text("Pay")
-                        .font(.system(size: 22, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .buttonStyle(.plain)
+            .frame(maxHeight: 50)
             
             Spacer()
         }
