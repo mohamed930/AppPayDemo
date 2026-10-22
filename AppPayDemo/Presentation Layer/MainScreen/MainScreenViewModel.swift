@@ -10,8 +10,15 @@ import Combine
 
 class MainScreenViewModel: ObservableObject {
     @Published var txt: String = ""
-    private var amount: Double = 0.0
     @Published var isVoilatedValidation: Bool = false
+    
+    var useCases: PaymentUseCases
+    private var amount: Double = 0.0
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(useCases: PaymentUseCases) {
+        self.useCases = useCases
+    }
     
     func addPrefixPriceAndCurrncy() {
         guard let price = Double(txt) else {
@@ -44,6 +51,23 @@ class MainScreenViewModel: ObservableObject {
         }
         else {
             isVoilatedValidation = false
+            
+            let response = useCases.makePayment(amount: amount)
+            
+            response.sink(receiveCompletion: { [weak self] error in
+                guard let self else { return }
+                
+            }, receiveValue: { [weak self] response in
+                guard let self else { return }
+                
+                if response {
+                    
+                }
+                else {
+                    
+                }
+                
+            }).store(in: &cancellables)
         }
     }
 }
