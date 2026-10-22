@@ -66,7 +66,7 @@ class MainScreenViewModel: ObservableObject {
                     self.showPaymentAlert(amount: paymentAmount, status: .failure)
                 }
             }, receiveValue: { [weak self] success in
-                self?.showPaymentAlert(amount: paymentAmount, status: success ? .success : .failure)
+                self?.showPaymentAlert(amount: paymentAmount, status: success ? .tokenReceived : .failure)
             })
             .store(in: &cancellables)
     }

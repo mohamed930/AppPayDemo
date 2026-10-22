@@ -9,11 +9,12 @@ import Foundation
 
 enum AlertStatus {
     case success
+    case tokenReceived
     case failure
 
     var img: ImageResource {
         switch self {
-        case .success:
+        case .success, .tokenReceived:
             return .success
         case .failure:
             return .failure
@@ -22,7 +23,7 @@ enum AlertStatus {
     
     var color: ColorResource {
         switch self {
-        case .success:
+        case .success, .tokenReceived:
             return .success
         case .failure:
             return .failure
@@ -33,6 +34,8 @@ enum AlertStatus {
         switch self {
         case .success:
             return "Payment Successful"
+        case .tokenReceived:
+            return "Apple Pay token received"
         case .failure:
             return "Payment failed"
         }

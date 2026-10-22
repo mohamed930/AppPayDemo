@@ -11,16 +11,14 @@ import Combine
 final class PaymentRespotery: NSObject,PaymentRespoteryProtocol {
     
     private var applePayManager: ApplePayManager
-    private var apiService: ApplePayAPIService
     
-    init(applePayManager: ApplePayManager = ApplePayManager(),
-         apiService: ApplePayAPIService = ApplePayAPIService()) {
+    init(applePayManager: ApplePayManager = ApplePayManager()) {
         self.applePayManager = applePayManager
-        self.apiService = apiService
     }
     
     func makeApplePayment(amount: Double, Currency: String) -> Future<Bool, NSError> {
-        Future { [applePayManager, apiService] promise in
+        // Token capture demo: true means a nonempty token was received, not that funds were charged.
+        Future { [applePayManager] promise in
             DispatchQueue.main.async {
                 guard #available(iOS 17.4, *) else {
                     promise(.failure(NSError(
@@ -43,23 +41,21 @@ final class PaymentRespotery: NSObject,PaymentRespoteryProtocol {
                 let paymentAmount = Decimal(amount)
                 var paymentError: NSError?
 
-                applePayManager.onPaymentToken = { paymentData, completion in
-                    apiService.submitPaymentToken(
-                        paymentData: paymentData,
-                        amount: paymentAmount,
-                        currency: Currency
-                    ) { result in
-                        DispatchQueue.main.async {
-                            switch result {
-                            case .success:
-                                paymentError = nil
-                                completion(true)
-                            case .failure(let error):
-                                paymentError = error as NSError
-                                completion(false)
-                            }
-                        }
+                applePayManager.onPaymentToken = { [weak applePayManager] paymentData, completion in
+                    guard !paymentData.isEmpty else {
+                        let error = NSError(
+                            domain: "ApplePayTokenCapture",
+                            code: -3,
+                            userInfo: [NSLocalizedDescriptionKey: "Apple Pay returned empty paymentData (0 bytes). No usable token was received."]
+                        )
+                        paymentError = error
+                        applePayManager?.logError(error, context: "Apple Pay token capture failed")
+                        completion(false)
+                        return
                     }
+
+                    paymentError = nil
+                    completion(true)
                 }
 
                 applePayManager.startPayment(amount: paymentAmount, currency: Currency) { [weak applePayManager] success in
