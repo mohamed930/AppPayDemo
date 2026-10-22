@@ -28,12 +28,9 @@ struct MainScreenView: View {
                     .focused($isAmountFocused)
                     .onChange(of: isAmountFocused) { isFocused in
                         if !isFocused {
-                            // User finished editing
-                            print("Editing ended")
-                            print(viewModel.addPrefixPriceAndCurrncy())
+                            viewModel.addPrefixPriceAndCurrncy()
                         }
                         else {
-                            print("Editing Start")
                             viewModel.isVoilatedValidation = false
                         }
                     }
@@ -80,18 +77,21 @@ struct MainScreenView: View {
             .padding(.bottom,16)
             
             ApplePayButton {
+                isAmountFocused = false
                 viewModel.validateApplePayButtonAction()
             }
             .frame(maxHeight: 50)
+            .disabled(viewModel.isProcessingPayment)
             
             Spacer()
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical,20)
         .padding(.horizontal,20)
+        .customAlert(presenter: viewModel.alertPresenter)
     }
 }
 
 #Preview {
-    MainScreenView(viewModel: MainScreenViewModel())
+    MainScreenView(viewModel: MainScreenViewModel(useCases: PaymentUseCases(respotery: PaymentRespotery())))
 }

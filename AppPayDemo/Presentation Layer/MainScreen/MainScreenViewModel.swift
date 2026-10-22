@@ -8,9 +8,13 @@
 import Foundation
 import Combine
 
+@MainActor
 class MainScreenViewModel: ObservableObject {
     @Published var txt: String = ""
     @Published var isVoilatedValidation: Bool = false
+    @Published private(set) var isProcessingPayment = false
+
+    let alertPresenter = AlertPresenter()
     
     var useCases: PaymentUseCases
     private var amount: Double = 0.0
@@ -21,7 +25,11 @@ class MainScreenViewModel: ObservableObject {
     }
     
     func addPrefixPriceAndCurrncy() {
-        guard let price = Double(txt) else {
+        let input = txt.replacingOccurrences(of: "EGP", with: "")
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let price = Double(input), price.isFinite else {
+            amount = 0
             txt = "0.0 EGP"
             return
         }
@@ -40,34 +48,38 @@ class MainScreenViewModel: ObservableObject {
     }
     
     func validateApplePayButtonAction() {
-        guard !txt.isEmpty else {
-            txt = "0.0 EGP"
-            isVoilatedValidation = true
-            return
-        }
-        
-        if txt.contains("0.0 EGP") || txt.isEmpty {
-            isVoilatedValidation = true
-        }
-        else {
-            isVoilatedValidation = false
-            
-            let response = useCases.makePayment(amount: amount)
-            
-            response.sink(receiveCompletion: { [weak self] error in
+        guard !isProcessingPayment else { return }
+        addPrefixPriceAndCurrncy()
+        isVoilatedValidation = amount <= 0
+        guard !isVoilatedValidation else { return }
+
+        isProcessingPayment = true
+        let paymentAmount = txt
+
+        useCases.makePayment(amount: amount)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
                 guard let self else { return }
-                
-            }, receiveValue: { [weak self] response in
-                guard let self else { return }
-                
-                if response {
-                    
+                self.isProcessingPayment = false
+
+                if case .failure = completion {
+                    self.showPaymentAlert(amount: paymentAmount, status: .failure)
                 }
-                else {
-                    
-                }
-                
-            }).store(in: &cancellables)
-        }
+            }, receiveValue: { [weak self] success in
+                self?.showPaymentAlert(amount: paymentAmount, status: success ? .success : .failure)
+            })
+            .store(in: &cancellables)
+    }
+
+    private func showPaymentAlert(amount: String, status: AlertStatus) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy HH:mm"
+
+        alertPresenter.show(AlertParams(
+            amount: amount,
+            reference: "—",
+            date: formatter.string(from: Date()),
+            status: status
+        ))
     }
 }

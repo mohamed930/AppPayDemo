@@ -10,7 +10,7 @@ import SwiftUI
 
 class MainScreenViewController: UIViewController {
     
-    private let viewmodel = MainScreenViewModel()
+    private let viewmodel = MainScreenViewModel(useCases: PaymentUseCases(respotery: PaymentRespotery()))
 
     override func viewDidLoad() {
         super.viewDidLoad()
